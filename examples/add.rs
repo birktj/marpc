@@ -59,7 +59,9 @@ fn main() {
     std::thread::spawn(move || {
         pollster::block_on(async move {
             while let Ok(message) = recv.recv() {
-                let res = marpc::handle_rpc::<Service>(message.uri, (), &message.payload).await.unwrap();
+                let res = marpc::handle_rpc::<Service>(message.uri, (), &message.payload)
+                    .await
+                    .unwrap();
                 message.response_channel.send(res).unwrap();
             }
         });

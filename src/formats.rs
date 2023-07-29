@@ -27,18 +27,24 @@ impl<E: serde::Serialize + serde::de::DeserializeOwned> RpcFormat<E> for Json {
         Ok(serde_json::to_vec(&val)?)
     }
 
-    fn deserialize_request<M: serde::de::DeserializeOwned>(buffer: &[u8]) -> Result<M, Self::Error> {
+    fn deserialize_request<M: serde::de::DeserializeOwned>(
+        buffer: &[u8],
+    ) -> Result<M, Self::Error> {
         Ok(serde_json::from_slice(buffer)?)
     }
 
-    fn serialize_response<R: serde::Serialize>(val: RpcResult<R, E, Self::Error>) -> Result<Vec<u8>, Self::Error>
-        where R: serde::Serialize 
+    fn serialize_response<R: serde::Serialize>(
+        val: RpcResult<R, E, Self::Error>,
+    ) -> Result<Vec<u8>, Self::Error>
+    where
+        R: serde::Serialize,
     {
         Ok(serde_json::to_vec(&val)?)
     }
 
     fn deserialize_response<R>(buffer: &[u8]) -> Result<RpcResult<R, E, Self::Error>, Self::Error>
-        where R: serde::de::DeserializeOwned
+    where
+        R: serde::de::DeserializeOwned,
     {
         Ok(serde_json::from_slice(buffer)?)
     }

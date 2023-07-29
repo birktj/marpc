@@ -1,7 +1,7 @@
 use super::*;
 
-use std::pin::Pin;
 use std::future::Future;
+use std::pin::Pin;
 
 /// The set of rpc errors that the client can observe.
 ///
@@ -48,16 +48,24 @@ pub trait ClientRpcService: RpcService {
     type ClientError;
 
     /// The client handler function.
-    fn handle<'a>(uri: &'static str, payload: &'a [u8]) 
-        -> Pin<Box<dyn 'a + Future<Output = Result<Vec<u8>, Self::ClientError>>>>;
+    fn handle<'a>(
+        uri: &'static str,
+        payload: &'a [u8],
+    ) -> Pin<Box<dyn 'a + Future<Output = Result<Vec<u8>, Self::ClientError>>>>;
 }
 
 /// Perform a rpc call.
-pub async fn rpc_call<S: ClientRpcService, M: RpcMethod<S>>(method: M) -> Result<M::Response, ClientRpcError<S::ServerError, S::ClientError, <S::Format as RpcFormat<S::ServerError>>::Error>> {
+pub async fn rpc_call<S: ClientRpcService, M: RpcMethod<S>>(
+    method: M,
+) -> Result<
+    M::Response,
+    ClientRpcError<S::ServerError, S::ClientError, <S::Format as RpcFormat<S::ServerError>>::Error>,
+> {
     let payload = <S::Format as RpcFormat<S::ServerError>>::serialize_request(method)
         .map_err(|e| ClientRpcError::ClientSerializeError(e))?;
 
-    let res_buffer = S::handle(M::URI, &payload).await
+    let res_buffer = S::handle(M::URI, &payload)
+        .await
         .map_err(|e| ClientRpcError::HandlerError(e))?;
 
     let res = <S::Format as RpcFormat<S::ServerError>>::deserialize_response(&res_buffer)

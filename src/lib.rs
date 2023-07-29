@@ -2,19 +2,19 @@
 
 //! # MARPC - simple macro-based and boilerplate-free rpc library
 //!
-//! ## Usage 
+//! ## Usage
 //!
 //! - You start by creating a rpc service type that implements [`RpcService`]. This defines what
 //!   format will be used for rpc transactions. This type needs to be accessible to both your
 //!   client code and server code.
-//! - The on the *client* you implement [`ClientRpcService`] for this type. This allows you to 
+//! - The on the *client* you implement [`ClientRpcService`] for this type. This allows you to
 //!   define a *client handler*, that is the function that sends the rpc request to the server
 //!   and recieves a response.
-//! - On the *server* you implement [`ServerRpcService`] for your service type. This is used to 
+//! - On the *server* you implement [`ServerRpcService`] for your service type. This is used to
 //!   define the state type used by your rpc functions.
-//! - On the *server* you *register* your service type with 
-//!   [`register_service!`][register_service]. This 
-//! - Finally you can define rpc functions with the [`#[rpc]`][rpc] macro. Use the `client` and 
+//! - On the *server* you *register* your service type with
+//!   [`register_service!`][register_service]. This
+//! - Finally you can define rpc functions with the [`#[rpc]`][rpc] macro. Use the `client` and
 //!   `server` feature flags to control whether to generate code for the client or server in the
 //!   [`#[rpc]`][rpc] macro.
 //! - On the *client* you can simply call yout rpc functions as they where normal functions.
@@ -26,18 +26,18 @@
 //! # pollster::block_on(async {
 //! use std::future::Future;
 //! use std::pin::Pin;
-//! 
+//!
 //! struct Service;
-//! 
+//!
 //! impl marpc::RpcService for Service {
 //!     type Format = marpc::Json;
 //!     type ServerError = ();
 //! }
-//! 
+//!
 //! #[cfg(feature = "client")]
 //! impl marpc::ClientRpcService for Service {
 //!     type ClientError = Box<dyn std::error::Error>;
-//! 
+//!
 //!     fn handle<'a>(
 //!         uri: &'static str,
 //!         payload: &'a [u8],
@@ -47,20 +47,20 @@
 //!         })
 //!     }
 //! }
-//! 
+//!
 //! #[cfg(feature = "server")]
 //! impl marpc::ServerRpcService for Service {
 //!     type ServerState = ();
 //! }
-//! 
+//!
 //! #[cfg(feature = "server")]
 //! marpc::register_service!(Service);
-//! 
+//!
 //! #[marpc::rpc(AddRpc, uri = "/api/add", service = Service)]
 //! async fn add(a: i32, b: i32) -> Result<i32, ()> {
 //!     Ok(a + b)
 //! }
-//! 
+//!
 //! let res = add(5, 6).await;
 //! assert_eq!(res.unwrap(), 11);
 //! # })
@@ -110,7 +110,7 @@ pub type RpcResult<T, E, FE> = Result<T, RpcError<E, FE>>;
 /// #
 /// # impl marpc::ClientRpcService for Service {
 /// #     type ClientError = ();
-/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8]) 
+/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
 /// #         Box::pin(async { Err(()) })
@@ -145,15 +145,20 @@ pub trait RpcFormat<E> {
     fn serialize_request<M: serde::Serialize>(val: M) -> Result<Vec<u8>, Self::Error>;
 
     /// Deserialize the rpc response from the client on the server.
-    fn deserialize_request<M: serde::de::DeserializeOwned>(buffer: &[u8]) -> Result<M, Self::Error>;
+    fn deserialize_request<M: serde::de::DeserializeOwned>(buffer: &[u8])
+        -> Result<M, Self::Error>;
 
     /// Serialize the rpc response to send to the client from the server.
-    fn serialize_response<R: serde::Serialize>(val: RpcResult<R, E, Self::Error>) -> Result<Vec<u8>, Self::Error>
-        where R: serde::Serialize;
+    fn serialize_response<R: serde::Serialize>(
+        val: RpcResult<R, E, Self::Error>,
+    ) -> Result<Vec<u8>, Self::Error>
+    where
+        R: serde::Serialize;
 
     /// Deserialize the rpc response from the server on the client.
     fn deserialize_response<R>(buffer: &[u8]) -> Result<RpcResult<R, E, Self::Error>, Self::Error>
-        where R: serde::de::DeserializeOwned;
+    where
+        R: serde::de::DeserializeOwned;
 }
 
 pub mod formats;
@@ -163,26 +168,19 @@ pub use formats::Json;
 mod server;
 
 #[cfg(feature = "server")]
-pub use server::{
-    ServerRpcService,
-    find_rpc_handler,
-    handle_rpc,
-};
+pub use server::{find_rpc_handler, handle_rpc, ServerRpcService};
 
 #[cfg(feature = "client")]
 mod client;
 
 #[cfg(feature = "client")]
-pub use client::{
-    ClientRpcError,
-    ClientRpcService,
-};
+pub use client::{ClientRpcError, ClientRpcService};
 
 /// Define a rpc function.
 ///
 /// This function must be `async` and must return a [`Result`].
 ///
-/// Use the `client` and `server` feature flags to control whether to generate code for the 
+/// Use the `client` and `server` feature flags to control whether to generate code for the
 /// client, server, or both.
 ///
 /// # Arguments
@@ -208,10 +206,10 @@ pub use client::{
 /// # Workings
 ///
 /// `#[rpc]` defines two items:
-/// - A struct with fields correspoing to all non-`#[server]` arguments. This struct implements 
-///   [`Serialize`][serde::Serialize] and [`Deserialize`][serde::Deserialize] as well as 
+/// - A struct with fields correspoing to all non-`#[server]` arguments. This struct implements
+///   [`Serialize`][serde::Serialize] and [`Deserialize`][serde::Deserialize] as well as
 ///   [`RpcMethod`].
-/// - On the *client* a function with the same name and arguments (except for `#[server]` 
+/// - On the *client* a function with the same name and arguments (except for `#[server]`
 ///   arguments) as the given function. Its return type will be [`Result`] with the same `Ok`
 ///   type as the given function but [`ClientRpcError`] as the `Err` type. This function calls
 ///   [`ClientRpcService::handle`] to perform the rpc call.
@@ -237,7 +235,7 @@ pub use client::{
 /// #
 /// # impl marpc::ClientRpcService for Service {
 /// #     type ClientError = ();
-/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8]) 
+/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
 /// #         Box::pin(async { Err(()) })
@@ -264,7 +262,7 @@ pub use client::{
 /// #
 /// # impl marpc::ClientRpcService for Service {
 /// #     type ClientError = ();
-/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8]) 
+/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
 /// #         Box::pin(async { Err(()) })
@@ -289,14 +287,14 @@ pub mod internal {
     pub use client::rpc_call;
 
     pub use server::ServerRpcHandler;
-    pub use server::ServerRpcRegistryItem;
     pub use server::ServerRpcRegistry;
+    pub use server::ServerRpcRegistryItem;
 }
 
 /// Register a rpc service.
 ///
 /// This macro defines the correct types and methods such that [`handle_rpc`] is able to discover
-/// any rpc handlers. This is based on the [`inventory`] crate. 
+/// any rpc handlers. This is based on the [`inventory`] crate.
 ///
 /// This macro must be placed outside of any function body.
 ///
@@ -317,7 +315,7 @@ pub mod internal {
 /// }
 /// # impl marpc::ClientRpcService for Service {
 /// #     type ClientError = ();
-/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8]) 
+/// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
 /// #         Box::pin(async { Err(()) })
@@ -330,7 +328,7 @@ pub mod internal {
 /// async fn test() -> Result<(), ()> {
 ///     Ok(())
 /// }
-/// 
+///
 /// assert!(marpc::find_rpc_handler::<Service>("/test").is_some());
 /// assert!(marpc::find_rpc_handler::<Service>("/test2").is_none());
 /// ```
@@ -342,14 +340,16 @@ macro_rules! register_service {
         const _: () = {
             struct ServiceRegistryItem {
                 cell: std::sync::OnceLock<$crate::internal::ServerRpcHandler<$service>>,
-                handler_fn: fn() -> $crate::internal::ServerRpcHandler<$service>
+                handler_fn: fn() -> $crate::internal::ServerRpcHandler<$service>,
             }
 
             $crate::inventory::collect!(&'static ServiceRegistryItem);
 
             impl $service {
                 #[doc(hidden)]
-                pub const fn __rpc_call_internal_create_handler(handler_fn: fn() -> $crate::internal::ServerRpcHandler<$service>) -> ServiceRegistryItem {
+                pub const fn __rpc_call_internal_create_handler(
+                    handler_fn: fn() -> $crate::internal::ServerRpcHandler<$service>,
+                ) -> ServiceRegistryItem {
                     ServiceRegistryItem {
                         cell: std::sync::OnceLock::new(),
                         handler_fn,
