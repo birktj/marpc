@@ -1,5 +1,9 @@
 # MARPC - macro-based, boilerplate-free rpc library
 
+![crates.io](https://img.shields.io/crates/d/marpc)
+![docs.rs](https://img.shields.io/docsrs/marpc/latest)
+![license MIT or Apache 2.0](https://img.shields.io/badge/license-MIT_or_Apache_2.0-blue.svg)
+
 This is a simple rpc library inspired by [`server_fn`][1] from the [`leptos`][2]
 ecosystem. It allows you to define functions the will be run on a server, but
 called from client. The primary usecase is webapps with a rust frontend, but
