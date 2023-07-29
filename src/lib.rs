@@ -154,16 +154,15 @@ pub trait RpcFormat {
 pub mod formats;
 pub use formats::Json;
 
-#[cfg(feature = "server")]
 mod server;
 
-#[cfg(feature = "server")]
-pub use server::{find_rpc_handler, handle_rpc, ServerRpcService};
+pub use server::ServerRpcService;
 
-#[cfg(feature = "client")]
+#[cfg(feature = "server")]
+pub use server::{find_rpc_handler, handle_rpc};
+
 mod client;
 
-#[cfg(feature = "client")]
 pub use client::{ClientRpcError, ClientRpcService};
 
 /// Define a rpc function.
@@ -261,7 +260,6 @@ pub use client::{ClientRpcError, ClientRpcService};
 ///
 pub use marpc_macros::rpc;
 
-#[cfg(any(feature = "server", feature = "client"))]
 pub mod internal {
     use super::*;
 

@@ -12,6 +12,7 @@ type ServerRpcHandlerType<S, E> =
 /// A rpc handler that runs on the server.
 ///
 /// This is used internaly by the [`#[rpc]`][rpc] macro.
+#[allow(dead_code)]
 pub struct ServerRpcHandler<S: ServerRpcService> {
     uri: &'static str,
     handler: ServerRpcHandlerType<S::ServerState, <S::Format as RpcFormat>::Error>,
@@ -72,6 +73,7 @@ pub enum ServerRpcProtocolError<E> {
 }
 
 /// Find a matching rpc handler given a rpc service and uri.
+#[cfg(feature = "server")]
 pub fn find_rpc_handler<S: ServerRpcService>(uri: &str) -> Option<&'static ServerRpcHandler<S>>
 where
     &'static S::RegistryItem: inventory::Collect,
@@ -84,6 +86,7 @@ where
 }
 
 /// Handle a rpc call on the server.
+#[cfg(feature = "server")]
 pub async fn handle_rpc<S: 'static + ServerRpcService>(
     uri: &str,
     state: S::ServerState,
