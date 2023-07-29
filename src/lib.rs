@@ -120,7 +120,7 @@ pub trait RpcMethod<S: RpcService>: serde::Serialize + serde::de::DeserializeOwn
 
 /// A rpc service.
 ///
-/// See also [`ClientRpcService`] and [`ServerRpcService`].
+/// See also [`ClientRpcService`] and [`register_service!`][register_service].
 pub trait RpcService {
     type Format: RpcFormat;
 }
@@ -156,8 +156,6 @@ pub use formats::Json;
 
 mod server;
 
-pub use server::ServerRpcService;
-
 #[cfg(feature = "server")]
 pub use server::{find_rpc_handler, handle_rpc};
 
@@ -182,7 +180,8 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// # `#[server]` attribute
 ///
 /// Functions arguments that are decorated with the `#[server]` attribute are *server arguments*.
-/// They corespond to [`ServerRpcService::ServerState`].
+/// They correspond to [`internal::ServerRpcService::ServerState`] which is given by the
+/// `SomeState` argument in [`register_service!(MyService with SomeState)`][register_service].
 ///
 /// - If no `#[server]` arguments are given then `ServerState` must be `()`.
 /// - If one `#[server]` arguments are given then `ServerState` must of the same type as this
@@ -267,6 +266,7 @@ pub mod internal {
 
     pub use server::ServerRpcHandler;
     pub use server::ServerRpcRegistryItem;
+    pub use server::ServerRpcService;
 
     pub trait ResultTypes {
         type Ok;
@@ -350,7 +350,7 @@ macro_rules! register_service {
                 }
             }
 
-            impl $crate::ServerRpcService for $service {
+            impl $crate::internal::ServerRpcService for $service {
                 type ServerState = $state;
                 type RegistryItem = ServiceRegistryItem;
             }
