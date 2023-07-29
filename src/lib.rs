@@ -10,10 +10,9 @@
 //! - The on the *client* you implement [`ClientRpcService`] for this type. This allows you to
 //!   define a *client handler*, that is the function that sends the rpc request to the server
 //!   and recieves a response.
-//! - On the *server* you implement [`ServerRpcService`] for your service type. This is used to
-//!   define the state type used by your rpc functions.
 //! - On the *server* you *register* your service type with
-//!   [`register_service!`][register_service]. This
+//!   [`register_service!`][register_service]. This allows [`find_rpc_handler`] [`handle_rpc`] to
+//!   find your rpc handler. It also allows you to specify a server state type.
 //! - Finally you can define rpc functions with the [`#[rpc]`][rpc] macro. Use the `client` and
 //!   `server` feature flags to control whether to generate code for the client or server in the
 //!   [`#[rpc]`][rpc] macro.
@@ -46,11 +45,6 @@
 //!             Ok(marpc::handle_rpc::<Service>(uri, (), payload).await?)
 //!         })
 //!     }
-//! }
-//!
-//! #[cfg(feature = "server")]
-//! impl marpc::ServerRpcService for Service {
-//!     type ServerState = ();
 //! }
 //!
 //! #[cfg(feature = "server")]
@@ -100,10 +94,6 @@ pub type RpcResult<T, E, FE> = Result<T, RpcError<E, FE>>;
 /// # impl marpc::RpcService for Service {
 /// #     type Format = marpc::Json;
 /// #     type ServerError = ();
-/// # }
-/// #
-/// # impl marpc::ServerRpcService for Service {
-/// #     type ServerState = ();
 /// # }
 /// #
 /// # marpc::register_service!(Service);
@@ -227,10 +217,6 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// #     type ServerError = ();
 /// # }
 /// #
-/// # impl marpc::ServerRpcService for Service {
-/// #     type ServerState = ();
-/// # }
-/// #
 /// # marpc::register_service!(Service);
 /// #
 /// # impl marpc::ClientRpcService for Service {
@@ -258,7 +244,6 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// # }
 /// #
 /// #
-/// # marpc::register_service!(Service);
 /// #
 /// # impl marpc::ClientRpcService for Service {
 /// #     type ClientError = ();
@@ -268,9 +253,7 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// #         Box::pin(async { Err(()) })
 /// #     }
 /// # }
-/// impl marpc::ServerRpcService for Service {
-///     type ServerState = i32;
-/// }
+/// marpc::register_service!(Service with i32);
 ///
 /// #[marpc::rpc(Test, uri = "/test", service = Service)]
 /// async fn test(#[server] number: i32) -> Result<i32, ()> {
@@ -287,18 +270,18 @@ pub mod internal {
     pub use client::rpc_call;
 
     pub use server::ServerRpcHandler;
-    pub use server::ServerRpcRegistry;
     pub use server::ServerRpcRegistryItem;
 }
 
 /// Register a rpc service.
 ///
 /// This macro defines the correct types and methods such that [`handle_rpc`] is able to discover
-/// any rpc handlers. This is based on the [`inventory`] crate.
+/// any rpc handlers. This is based on the [`inventory`] crate. It also allows you to specify a
+/// server state type.
+///
+/// In order to specify a server state type use `register_service!(MyService with MyState)`.
 ///
 /// This macro must be placed outside of any function body.
-///
-/// Note that `Service` needs to implement [`ServerRpcService`] for this macro to work.
 ///
 /// # Example
 ///
@@ -310,9 +293,6 @@ pub mod internal {
 ///     type ServerError = ();
 /// }
 ///
-/// impl marpc::ServerRpcService for Service {
-///     type ServerState = ();
-/// }
 /// # impl marpc::ClientRpcService for Service {
 /// #     type ClientError = ();
 /// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
@@ -321,12 +301,11 @@ pub mod internal {
 /// #         Box::pin(async { Err(()) })
 /// #     }
 /// # }
-///
-/// marpc::register_service!(Service);
+/// marpc::register_service!(Service with i32);
 ///
 /// #[marpc::rpc(Test, uri = "/test", service = Service)]
-/// async fn test() -> Result<(), ()> {
-///     Ok(())
+/// async fn test(#[server] number: i32) -> Result<i32, ()> {
+///     Ok(number)
 /// }
 ///
 /// assert!(marpc::find_rpc_handler::<Service>("/test").is_some());
@@ -337,6 +316,9 @@ pub mod internal {
 #[macro_export]
 macro_rules! register_service {
     ($service:ident) => {
+        $crate::register_service!($service with ());
+    };
+    ($service:ident with $state:ty) => {
         const _: () = {
             struct ServiceRegistryItem {
                 cell: std::sync::OnceLock<$crate::internal::ServerRpcHandler<$service>>,
@@ -363,7 +345,8 @@ macro_rules! register_service {
                 }
             }
 
-            impl $crate::internal::ServerRpcRegistry for $service {
+            impl $crate::ServerRpcService for $service {
+                type ServerState = $state;
                 type RegistryItem = ServiceRegistryItem;
             }
         };

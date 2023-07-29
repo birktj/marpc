@@ -269,7 +269,7 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let server_func = if cfg!(feature = "server") {
         let registry_item = quote! {
-            <#service as #crate_path::internal::ServerRpcRegistry>::RegistryItem
+            <#service as #crate_path::ServerRpcService>::RegistryItem
         };
 
         let create_handler = quote! {

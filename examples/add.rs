@@ -41,10 +41,6 @@ impl marpc::ClientRpcService for Service {
     }
 }
 
-impl marpc::ServerRpcService for Service {
-    type ServerState = ();
-}
-
 marpc::register_service!(Service);
 
 #[marpc::rpc(MyTest, uri = "/api/add", service = Service)]

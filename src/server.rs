@@ -53,16 +53,16 @@ impl<S: ServerRpcService> ServerRpcHandler<S> {
 }
 
 /// Server definition of a rpc service.
-pub trait ServerRpcService: RpcService {
+///
+/// This should not be implemented directly, but rather via the
+/// [`register_service!`][register_service] macro.
+pub trait ServerRpcService: RpcService + Sized {
     type ServerState;
+    type RegistryItem: ServerRpcRegistryItem<Self>;
 }
 
 pub trait ServerRpcRegistryItem<S: ServerRpcService> {
     fn handler(&self) -> &ServerRpcHandler<S>;
-}
-
-pub trait ServerRpcRegistry: ServerRpcService + Sized {
-    type RegistryItem: ServerRpcRegistryItem<Self>;
 }
 
 /// Errors that rpc handlers can return on the server.
@@ -74,7 +74,7 @@ pub enum ServerRpcProtocolError<E> {
 }
 
 /// Find a matching rpc handler given a rpc service and uri.
-pub fn find_rpc_handler<S: ServerRpcRegistry>(uri: &str) -> Option<&'static ServerRpcHandler<S>>
+pub fn find_rpc_handler<S: ServerRpcService>(uri: &str) -> Option<&'static ServerRpcHandler<S>>
 where
     &'static S::RegistryItem: inventory::Collect,
 {
@@ -86,7 +86,7 @@ where
 }
 
 /// Handle a rpc call on the server.
-pub async fn handle_rpc<S: 'static + ServerRpcRegistry>(
+pub async fn handle_rpc<S: 'static + ServerRpcService>(
     uri: &str,
     state: S::ServerState,
     payload: &[u8],
