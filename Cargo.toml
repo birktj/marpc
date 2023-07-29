@@ -2,6 +2,15 @@
 name = "marpc"
 version = "0.1.0"
 edition = "2021"
+authors = ["Birk Tjelmeland <git@birktj.no>"]
+description = "Macro based, boilerplate-free rpc library"
+readme = "README.md"
+homepage = "https://github.com/birktj/marpc"
+repository = "https://github.com/birktj/marpc"
+documentation = "https://docs.rs/marpc"
+license = "MIT OR Apache-2.0"
+keywords = ["rpc"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -74,5 +74,11 @@ communicating over a global queue. Note that this must be compiled with
 `--all-features` or `--features client,server` as both the client and server
 code needs to be generated.
 
+# License
+
+This library is dual-licensed under the MIT license and Apache License 2.0.
+Chose the license to use at your own discretion. See
+[LICENSE-MIT](./LICENSE-MIT) and [LICENSE-APACHE](./LICENSE-APACHE).
+
 [1]: https://docs.rs/server_fn/latest/server_fn/
 [2]: https://github.com/leptos-rs/leptos
