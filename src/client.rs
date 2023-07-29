@@ -29,7 +29,7 @@ pub enum ClientRpcError<SE, CE, FE> {
     ///
     /// THe client handler is [`ClientRpcService::handle`].
     #[error("client handler error")]
-    HandlerError(#[source] CE),
+    ClientHandlerError(#[source] CE),
 }
 
 impl<SE, CE, FE> From<RpcError<SE, FE>> for ClientRpcError<SE, CE, FE> {
@@ -37,7 +37,7 @@ impl<SE, CE, FE> From<RpcError<SE, FE>> for ClientRpcError<SE, CE, FE> {
         match error {
             RpcError::NoEndpointFound => ClientRpcError::NoEndpointFound,
             RpcError::ServerDeserializeError(e) => ClientRpcError::ServerDeserializeError(e),
-            RpcError::Other(e) => ClientRpcError::ServerError(e),
+            RpcError::HandlerError(e) => ClientRpcError::ServerError(e),
         }
     }
 }
@@ -66,7 +66,7 @@ pub async fn rpc_call<S: ClientRpcService, M: RpcMethod<S>>(
 
     let res_buffer = S::handle(M::URI, &payload)
         .await
-        .map_err(|e| ClientRpcError::HandlerError(e))?;
+        .map_err(|e| ClientRpcError::ClientHandlerError(e))?;
 
     let res = <S::Format as RpcFormat<S::ServerError>>::deserialize_response(&res_buffer)
         .map_err(|e| ClientRpcError::ClientDeserializeError(e))??;

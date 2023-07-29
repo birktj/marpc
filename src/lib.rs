@@ -84,7 +84,7 @@ pub enum RpcError<E, FE> {
     ///
     /// The rpc handler function is the one defined by [`#[rpc]`][rpc].
     #[error(transparent)]
-    Other(#[from] E),
+    HandlerError(#[from] E),
 }
 
 pub type RpcResult<T, E, FE> = Result<T, RpcError<E, FE>>;

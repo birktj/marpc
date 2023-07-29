@@ -36,7 +36,9 @@ impl<S: ServerRpcService> ServerRpcHandler<S> {
                             <S::Format as RpcFormat<S::ServerError>>::deserialize_request(buffer)
                                 .map_err(|e| RpcError::ServerDeserializeError(e))?;
 
-                        let res = handler(state, req).await.map_err(|e| RpcError::Other(e))?;
+                        let res = handler(state, req)
+                            .await
+                            .map_err(|e| RpcError::HandlerError(e))?;
                         Ok(res)
                     };
 
