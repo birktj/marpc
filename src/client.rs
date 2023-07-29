@@ -57,18 +57,16 @@ pub trait ClientRpcService: RpcService {
 /// Perform a rpc call.
 pub async fn rpc_call<S: ClientRpcService, M: RpcMethod<S>>(
     method: M,
-) -> Result<
-    M::Response,
-    ClientRpcError<S::ServerError, S::ClientError, <S::Format as RpcFormat<S::ServerError>>::Error>,
-> {
-    let payload = <S::Format as RpcFormat<S::ServerError>>::serialize_request(method)
+) -> Result<M::Response, ClientRpcError<M::Error, S::ClientError, <S::Format as RpcFormat>::Error>>
+{
+    let payload = <S::Format as RpcFormat>::serialize_request(method)
         .map_err(|e| ClientRpcError::ClientSerializeError(e))?;
 
     let res_buffer = S::handle(M::URI, &payload)
         .await
         .map_err(|e| ClientRpcError::ClientHandlerError(e))?;
 
-    let res = <S::Format as RpcFormat<S::ServerError>>::deserialize_response(&res_buffer)
+    let res = <S::Format as RpcFormat>::deserialize_response(&res_buffer)
         .map_err(|e| ClientRpcError::ClientDeserializeError(e))??;
 
     Ok(res)

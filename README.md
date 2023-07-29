@@ -27,7 +27,6 @@ struct Service;
 
 impl marpc::RpcService for Service {
     type Format = marpc::Json;
-    type ServerError = ();
 }
 
 #[cfg(feature = "client")]
@@ -43,9 +42,7 @@ impl marpc::ClientRpcService for Service {
 }
 
 #[cfg(feature = "server")]
-impl marpc::ServerRpcService for Service {
-    type ServerState = ();
-}
+marpc::register_service!(Service);
 ```
 
 Define rpc functions with the following:

@@ -14,7 +14,6 @@ struct Service;
 
 impl marpc::RpcService for Service {
     type Format = marpc::Json;
-    type ServerError = ();
 }
 
 impl marpc::ClientRpcService for Service {

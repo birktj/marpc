@@ -30,7 +30,6 @@
 //!
 //! impl marpc::RpcService for Service {
 //!     type Format = marpc::Json;
-//!     type ServerError = ();
 //! }
 //!
 //! #[cfg(feature = "client")]
@@ -93,7 +92,6 @@ pub type RpcResult<T, E, FE> = Result<T, RpcError<E, FE>>;
 /// #
 /// # impl marpc::RpcService for Service {
 /// #     type Format = marpc::Json;
-/// #     type ServerError = ();
 /// # }
 /// #
 /// # marpc::register_service!(Service);
@@ -116,6 +114,7 @@ pub type RpcResult<T, E, FE> = Result<T, RpcError<E, FE>>;
 /// `RpcMethod<Service>`.
 pub trait RpcMethod<S: RpcService>: serde::Serialize + serde::de::DeserializeOwned {
     type Response: serde::Serialize + serde::de::DeserializeOwned;
+    type Error: serde::Serialize + serde::de::DeserializeOwned;
     const URI: &'static str;
 }
 
@@ -123,12 +122,11 @@ pub trait RpcMethod<S: RpcService>: serde::Serialize + serde::de::DeserializeOwn
 ///
 /// See also [`ClientRpcService`] and [`ServerRpcService`].
 pub trait RpcService {
-    type Format: RpcFormat<Self::ServerError>;
-    type ServerError: serde::Serialize + serde::de::DeserializeOwned;
+    type Format: RpcFormat;
 }
 
 /// A format for (de)serializing rpc messages.
-pub trait RpcFormat<E> {
+pub trait RpcFormat {
     type Error: 'static + serde::Serialize + serde::de::DeserializeOwned;
 
     /// Serialize the rpc request to send to the server from the client.
@@ -139,16 +137,18 @@ pub trait RpcFormat<E> {
         -> Result<M, Self::Error>;
 
     /// Serialize the rpc response to send to the client from the server.
-    fn serialize_response<R: serde::Serialize>(
-        val: RpcResult<R, E, Self::Error>,
-    ) -> Result<Vec<u8>, Self::Error>
+    fn serialize_response<R, E>(val: RpcResult<R, E, Self::Error>) -> Result<Vec<u8>, Self::Error>
     where
-        R: serde::Serialize;
+        R: serde::Serialize,
+        E: serde::Serialize;
 
     /// Deserialize the rpc response from the server on the client.
-    fn deserialize_response<R>(buffer: &[u8]) -> Result<RpcResult<R, E, Self::Error>, Self::Error>
+    fn deserialize_response<R, E>(
+        buffer: &[u8],
+    ) -> Result<RpcResult<R, E, Self::Error>, Self::Error>
     where
-        R: serde::de::DeserializeOwned;
+        R: serde::de::DeserializeOwned,
+        E: serde::de::DeserializeOwned;
 }
 
 pub mod formats;
@@ -214,7 +214,6 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// #
 /// # impl marpc::RpcService for Service {
 /// #     type Format = marpc::Json;
-/// #     type ServerError = ();
 /// # }
 /// #
 /// # marpc::register_service!(Service);
@@ -240,7 +239,6 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// #
 /// # impl marpc::RpcService for Service {
 /// #     type Format = marpc::Json;
-/// #     type ServerError = ();
 /// # }
 /// #
 /// #
@@ -271,6 +269,16 @@ pub mod internal {
 
     pub use server::ServerRpcHandler;
     pub use server::ServerRpcRegistryItem;
+
+    pub trait ResultTypes {
+        type Ok;
+        type Err;
+    }
+
+    impl<T, E> ResultTypes for Result<T, E> {
+        type Ok = T;
+        type Err = E;
+    }
 }
 
 /// Register a rpc service.
@@ -290,7 +298,6 @@ pub mod internal {
 ///
 /// impl marpc::RpcService for Service {
 ///     type Format = marpc::Json;
-///     type ServerError = ();
 /// }
 ///
 /// # impl marpc::ClientRpcService for Service {

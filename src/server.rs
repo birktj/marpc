@@ -14,7 +14,7 @@ type ServerRpcHandlerType<S, E> =
 /// This is used internaly by the [`#[rpc]`][rpc] macro.
 pub struct ServerRpcHandler<S: ServerRpcService> {
     uri: &'static str,
-    handler: ServerRpcHandlerType<S::ServerState, <S::Format as RpcFormat<S::ServerError>>::Error>,
+    handler: ServerRpcHandlerType<S::ServerState, <S::Format as RpcFormat>::Error>,
 }
 
 impl<S: ServerRpcService> ServerRpcHandler<S> {
@@ -23,7 +23,7 @@ impl<S: ServerRpcService> ServerRpcHandler<S> {
     where
         M: RpcMethod<S>,
         H: 'static + Send + Sync + Clone + Fn(S::ServerState, M) -> F,
-        F: Future<Output = Result<M::Response, S::ServerError>>,
+        F: Future<Output = Result<M::Response, M::Error>>,
         S::ServerState: 'static,
     {
         Self {
@@ -32,18 +32,16 @@ impl<S: ServerRpcService> ServerRpcHandler<S> {
                 let handler = handler.clone();
                 Box::pin(async move {
                     let inner = async move {
-                        let req =
-                            <S::Format as RpcFormat<S::ServerError>>::deserialize_request(buffer)
-                                .map_err(|e| RpcError::ServerDeserializeError(e))?;
+                        let req = <S::Format as RpcFormat>::deserialize_request(buffer)
+                            .map_err(|e| RpcError::ServerDeserializeError(e))?;
 
                         let res = handler(state, req)
                             .await
                             .map_err(|e| RpcError::HandlerError(e))?;
-                        Ok(res)
+                        <Result<M::Response, RpcError<M::Error, _>>>::Ok(res)
                     };
 
-                    let res =
-                        <S::Format as RpcFormat<S::ServerError>>::serialize_response(inner.await)?;
+                    let res = <S::Format as RpcFormat>::serialize_response(inner.await)?;
 
                     Ok(res)
                 })
@@ -90,17 +88,15 @@ pub async fn handle_rpc<S: 'static + ServerRpcService>(
     uri: &str,
     state: S::ServerState,
     payload: &[u8],
-) -> Result<Vec<u8>, ServerRpcProtocolError<<S::Format as RpcFormat<S::ServerError>>::Error>>
+) -> Result<Vec<u8>, ServerRpcProtocolError<<S::Format as RpcFormat>::Error>>
 where
     &'static S::RegistryItem: inventory::Collect,
 {
     if let Some(handler) = find_rpc_handler::<S>(uri) {
         (handler.handler)(state, payload).await
     } else {
-        Ok(
-            <S::Format as RpcFormat<S::ServerError>>::serialize_response::<()>(Err(
-                RpcError::NoEndpointFound,
-            ))?,
-        )
+        Ok(<S::Format as RpcFormat>::serialize_response::<(), ()>(
+            Err(RpcError::NoEndpointFound),
+        )?)
     }
 }

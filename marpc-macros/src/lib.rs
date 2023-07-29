@@ -209,7 +209,11 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
     // We want to reference the `T` in `Result<T, E>` somehow.
     // This is crazy hacky, but seems to work.
     let response_type = quote! {
-        <#output as ::std::iter::IntoIterator>::Item
+        <#output as #crate_path::internal::ResultTypes>::Ok
+    };
+
+    let error_type = quote! {
+        <#output as #crate_path::internal::ResultTypes>::Err
     };
 
     let rpc_method = quote! {
@@ -220,12 +224,9 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
 
         impl #crate_path::RpcMethod<#service> for #name {
             type Response = #response_type;
+            type Error = #error_type;
             const URI: &'static str = #uri;
         }
-    };
-
-    let server_err_type = quote! {
-        <#service as #crate_path::RpcService>::ServerError
     };
 
     let client_err_type = quote! {
@@ -233,7 +234,7 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let rpc_format = quote! {
-        <<#service as #crate_path::RpcService>::Format as #crate_path::RpcFormat<#server_err_type>>
+        <<#service as #crate_path::RpcService>::Format as #crate_path::RpcFormat>
     };
 
     let format_err_type = quote! {
@@ -242,7 +243,7 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let client_func_signature = {
         let err_type = quote! {
-            #crate_path::ClientRpcError<#server_err_type, #client_err_type, #format_err_type>
+            #crate_path::ClientRpcError<#error_type, #client_err_type, #format_err_type>
         };
 
         let client_return_type = quote! {

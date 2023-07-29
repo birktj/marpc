@@ -20,7 +20,7 @@ impl From<serde_json::Error> for JsonError {
     }
 }
 
-impl<E: serde::Serialize + serde::de::DeserializeOwned> RpcFormat<E> for Json {
+impl RpcFormat for Json {
     type Error = JsonError;
 
     fn serialize_request<M: serde::Serialize>(val: M) -> Result<Vec<u8>, Self::Error> {
@@ -33,18 +33,20 @@ impl<E: serde::Serialize + serde::de::DeserializeOwned> RpcFormat<E> for Json {
         Ok(serde_json::from_slice(buffer)?)
     }
 
-    fn serialize_response<R: serde::Serialize>(
-        val: RpcResult<R, E, Self::Error>,
-    ) -> Result<Vec<u8>, Self::Error>
+    fn serialize_response<R, E>(val: RpcResult<R, E, Self::Error>) -> Result<Vec<u8>, Self::Error>
     where
         R: serde::Serialize,
+        E: serde::Serialize,
     {
         Ok(serde_json::to_vec(&val)?)
     }
 
-    fn deserialize_response<R>(buffer: &[u8]) -> Result<RpcResult<R, E, Self::Error>, Self::Error>
+    fn deserialize_response<R, E>(
+        buffer: &[u8],
+    ) -> Result<RpcResult<R, E, Self::Error>, Self::Error>
     where
         R: serde::de::DeserializeOwned,
+        E: serde::de::DeserializeOwned,
     {
         Ok(serde_json::from_slice(buffer)?)
     }
