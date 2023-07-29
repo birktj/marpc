@@ -71,6 +71,12 @@ communicating over a global queue. Note that this must be compiled with
 `--all-features` or `--features client,server` as both the client and server
 code needs to be generated.
 
+See [`examples/hello_net.rs`](examples/hello_net.rs) for a more sophisticated
+example with a client and server communicating over a tcp stream. Run
+`cargo run --features server --example hello_net -- server Hello` in one window
+and then open another window and run
+`cargo run --features client --example hello_net -- client world`.
+
 # License
 
 This library is dual-licensed under the MIT license and Apache License 2.0.

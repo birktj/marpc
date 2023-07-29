@@ -35,3 +35,4 @@ marpc-macros = { path = "marpc-macros" }
 
 [dev-dependencies]
 pollster = "0.3"
+tokio = { version = "1.29", features = [ "rt", "macros", "net", "io-util" ] }
