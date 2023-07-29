@@ -1,7 +1,11 @@
 use super::*;
 
+/// A simple json-based rpc format.
+///
+/// This uses `serde_json` to (de)serialize rpc messages.
 pub struct Json;
 
+/// An error from json (de)serializing.
 #[derive(Clone, Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
 #[error("json format error: {message}")]
 pub struct JsonError {

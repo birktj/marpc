@@ -11,6 +11,9 @@ documentation = "https://docs.rs/marpc"
 license = "MIT OR Apache-2.0"
 keywords = ["rpc"]
 
+[package.metadata.docs.rs]
+all-features = true
+rustc-args = ["--cfg", "docsrs"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
