@@ -1,7 +1,7 @@
 # MARPC - macro-based, boilerplate-free rpc library
 
-![crates.io](https://img.shields.io/crates/d/marpc)
-![docs.rs](https://img.shields.io/docsrs/marpc/latest)
+[![crates.io](https://img.shields.io/crates/d/marpc)](https://crates.io/crates/marpc)
+[![docs.rs](https://img.shields.io/docsrs/marpc/latest)](https://docs.rs/marpc)
 ![license MIT or Apache 2.0](https://img.shields.io/badge/license-MIT_or_Apache_2.0-blue.svg)
 
 This is a simple rpc library inspired by [`server_fn`][1] from the [`leptos`][2]
