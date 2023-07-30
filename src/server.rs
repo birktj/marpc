@@ -5,7 +5,7 @@ use std::pin::Pin;
 
 type ServerRpcHandlerResponse<E> = Result<Vec<u8>, ServerRpcProtocolError<E>>;
 type ServerRpcHandlerFuture<'a, E> =
-    Pin<Box<dyn Future<Output = ServerRpcHandlerResponse<E>> + 'a>>;
+    Pin<Box<dyn Send + Future<Output = ServerRpcHandlerResponse<E>> + 'a>>;
 type ServerRpcHandlerType<S, E> =
     Box<dyn 'static + Send + Sync + for<'a> Fn(S, &'a [u8]) -> ServerRpcHandlerFuture<'a, E>>;
 
@@ -22,10 +22,10 @@ impl<S: ServerRpcService> ServerRpcHandler<S> {
     /// Create a new rpc handler.
     pub fn new<M, H, F>(uri: &'static str, handler: H) -> Self
     where
-        M: RpcMethod<S>,
+        M: Send + RpcMethod<S>,
         H: 'static + Send + Sync + Clone + Fn(S::ServerState, M) -> F,
-        F: Future<Output = Result<M::Response, M::Error>>,
-        S::ServerState: 'static,
+        F: Send + Future<Output = Result<M::Response, M::Error>>,
+        S::ServerState: 'static + Send,
     {
         Self {
             uri,
