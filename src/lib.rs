@@ -325,7 +325,7 @@ macro_rules! register_service {
     };
     ($service:ident with $state:ty) => {
         const _: () = {
-            struct ServiceRegistryItem {
+            pub struct ServiceRegistryItem {
                 cell: std::sync::OnceLock<$crate::internal::ServerRpcHandler<$service>>,
                 handler_fn: fn() -> $crate::internal::ServerRpcHandler<$service>,
             }
