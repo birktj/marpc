@@ -233,21 +233,9 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
         <#service as #crate_path::ClientRpcService>::ClientError
     };
 
-    let rpc_format = quote! {
-        <<#service as #crate_path::RpcService>::Format as #crate_path::RpcFormat>
-    };
-
-    let format_err_type = quote! {
-        #rpc_format::Error
-    };
-
     let client_func_signature = {
-        let err_type = quote! {
-            #crate_path::ClientRpcError<#error_type, #client_err_type, #format_err_type>
-        };
-
         let client_return_type = quote! {
-            ::std::result::Result<#response_type, #err_type>
+            ::std::result::Result<#response_type, #client_err_type>
         };
 
         quote! {

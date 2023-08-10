@@ -3,9 +3,6 @@ use std::pin::Pin;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-#[derive(thiserror::Error, Debug, serde::Serialize, serde::Deserialize)]
-enum MyError {}
-
 struct Service;
 
 impl marpc::RpcService for Service {
@@ -14,7 +11,7 @@ impl marpc::RpcService for Service {
 
 #[cfg(feature = "client")]
 impl marpc::ClientRpcService for Service {
-    type ClientError = std::io::Error;
+    type ClientError = Box<dyn std::error::Error>;
 
     fn handle<'a>(
         uri: &'static str,
@@ -65,7 +62,7 @@ async fn client(name: String) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[marpc::rpc(SayHello, uri = "/hello", service = Service)]
-async fn say_hello(#[server] greeting: String, name: String) -> Result<String, MyError> {
+async fn say_hello(#[server] greeting: String, name: String) -> Result<String, String> {
     Ok(format!("{greeting} {name}!"))
 }
 

@@ -50,7 +50,7 @@
 //! marpc::register_service!(Service);
 //!
 //! #[marpc::rpc(AddRpc, uri = "/api/add", service = Service)]
-//! async fn add(a: i32, b: i32) -> Result<i32, ()> {
+//! async fn add(a: i32, b: i32) -> Result<i32, String> {
 //!     Ok(a + b)
 //! }
 //!
@@ -63,6 +63,23 @@
 pub use inventory;
 
 pub use serde;
+
+/// The various protocol errors that can happen.
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum ProtocolError<FE> {
+    /// The client could not serialize the rpc request.
+    #[error("client rpc serialize error")]
+    ClientSerializeError(#[source] FE),
+    /// The client could not deserialize the rpc response.
+    #[error("client rpc deserialize error")]
+    ClientDeserializeError(#[source] FE),
+    /// The server could not find any matching rpc endpoints.
+    #[error("no rpc endpoint found")]
+    NoEndpointFound,
+    /// The server could not deserialize the rpc request.
+    #[error("server rpc deserialize error")]
+    ServerDeserializeError(#[source] FE),
+}
 
 /// The rpc errors that can happen on the server and that are sent to the client.
 #[derive(thiserror::Error, Debug, serde::Serialize, serde::Deserialize)]
@@ -97,15 +114,15 @@ pub type RpcResult<T, E, FE> = Result<T, RpcError<E, FE>>;
 /// # marpc::register_service!(Service);
 /// #
 /// # impl marpc::ClientRpcService for Service {
-/// #     type ClientError = ();
+/// #     type ClientError = Box<dyn std::error::Error>;
 /// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
-/// #         Box::pin(async { Err(()) })
+/// #         Box::pin(async { Err("".into()) })
 /// #     }
 /// # }
 /// #[marpc::rpc(Test, uri = "/test", service = Service)]
-/// async fn test() -> Result<(), ()> {
+/// async fn test() -> Result<(), String> {
 ///     Ok(())
 /// }
 /// ```
@@ -161,7 +178,7 @@ pub use server::{find_rpc_handler, handle_rpc};
 
 mod client;
 
-pub use client::{ClientRpcError, ClientRpcService};
+pub use client::ClientRpcService;
 
 /// Define a rpc function.
 ///
@@ -199,8 +216,8 @@ pub use client::{ClientRpcError, ClientRpcService};
 ///   [`RpcMethod`].
 /// - On the *client* a function with the same name and arguments (except for `#[server]`
 ///   arguments) as the given function. Its return type will be [`Result`] with the same `Ok`
-///   type as the given function but [`ClientRpcError`] as the `Err` type. This function calls
-///   [`ClientRpcService::handle`] to perform the rpc call.
+///   type as the given function but [`ClientRpcService::ClientError`] as the `Err` type. This 
+///   function calls [`ClientRpcService::handle`] to perform the rpc call.
 ///
 /// One the *server* it also creates an handler that discoverable by [`find_rpc_handler`] and
 /// [`handle_rpc`]. This contains the code from the function body.
@@ -217,15 +234,15 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// # marpc::register_service!(Service);
 /// #
 /// # impl marpc::ClientRpcService for Service {
-/// #     type ClientError = ();
+/// #     type ClientError = Box<dyn std::error::Error>;
 /// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
-/// #         Box::pin(async { Err(()) })
+/// #         Box::pin(async { Err("".into()) })
 /// #     }
 /// # }
 /// #[marpc::rpc(Test, uri = "/test", service = Service)]
-/// async fn test() -> Result<(), ()> {
+/// async fn test() -> Result<(), String> {
 ///     Ok(())
 /// }
 /// ```
@@ -242,17 +259,17 @@ pub use client::{ClientRpcError, ClientRpcService};
 /// #
 /// #
 /// # impl marpc::ClientRpcService for Service {
-/// #     type ClientError = ();
+/// #     type ClientError = Box<dyn std::error::Error>;
 /// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
-/// #         Box::pin(async { Err(()) })
+/// #         Box::pin(async { Err("".into()) })
 /// #     }
 /// # }
 /// marpc::register_service!(Service with i32);
 ///
 /// #[marpc::rpc(Test, uri = "/test", service = Service)]
-/// async fn test(#[server] number: i32) -> Result<i32, ()> {
+/// async fn test(#[server] number: i32) -> Result<i32, String> {
 ///     Ok(number)
 /// }
 /// ```
@@ -299,17 +316,17 @@ pub mod internal {
 /// }
 ///
 /// # impl marpc::ClientRpcService for Service {
-/// #     type ClientError = ();
+/// #     type ClientError = Box<dyn std::error::Error>;
 /// #     fn handle<'a>(_uri: &'static str, _payload: &'a [u8])
 /// #         -> std::pin::Pin<Box<dyn 'a + std::future::Future<Output = Result<Vec<u8>, Self::ClientError>>>>
 /// #     {
-/// #         Box::pin(async { Err(()) })
+/// #         Box::pin(async { Err("".into()) })
 /// #     }
 /// # }
 /// marpc::register_service!(Service with i32);
 ///
 /// #[marpc::rpc(Test, uri = "/test", service = Service)]
-/// async fn test(#[server] number: i32) -> Result<i32, ()> {
+/// async fn test(#[server] number: i32) -> Result<i32, String> {
 ///     Ok(number)
 /// }
 ///

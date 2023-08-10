@@ -43,7 +43,7 @@ impl marpc::ClientRpcService for Service {
 marpc::register_service!(Service);
 
 #[marpc::rpc(MyTest, uri = "/api/add", service = Service)]
-async fn test(a: i32, b: i32) -> Result<i32, ()> {
+async fn test(a: i32, b: i32) -> Result<i32, String> {
     Ok(a + b)
 }
 
