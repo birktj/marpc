@@ -122,6 +122,7 @@ struct RpcArgs {
     name: syn::Ident,
     uri: syn::Expr,
     service: syn::Path,
+    client_error: Option<syn::Type>,
 }
 
 impl Parse for RpcArgs {
@@ -137,6 +138,7 @@ impl Parse for RpcArgs {
 
         let mut uri = None;
         let mut service = None;
+        let mut client_error = None;
 
         for arg in args {
             match arg {
@@ -146,8 +148,12 @@ impl Parse for RpcArgs {
                 RpcArg::Service(x) if service.is_some() => {
                     return Err(Error::new_spanned(x, "can only have one service argument"))
                 }
+                RpcArg::ClientErrorType(x) if client_error.is_some() => {
+                    return Err(Error::new_spanned(x, "can only have one error argument"))
+                }
                 RpcArg::Uri(u) => uri = Some(u),
                 RpcArg::Service(s) => service = Some(s),
+                RpcArg::ClientErrorType(e) => client_error = Some(e),
             }
         }
 
@@ -160,7 +166,7 @@ impl Parse for RpcArgs {
             "must have a `service` argument",
         ))?;
 
-        Ok(Self { name, uri, service })
+        Ok(Self { name, uri, service, client_error })
     }
 }
 
@@ -168,6 +174,7 @@ impl Parse for RpcArgs {
 enum RpcArg {
     Uri(syn::Expr),
     Service(syn::Path),
+    ClientErrorType(syn::Type)
 }
 
 impl Parse for RpcArg {
@@ -183,14 +190,18 @@ impl Parse for RpcArg {
                 input.parse::<Token![=]>()?;
                 Ok(Self::Service(input.parse()?))
             }
-            _ => Err(Error::new_spanned(argname, "expected `uri` or `service`")),
+            "error" => {
+                input.parse::<Token![=]>()?;
+                Ok(Self::ClientErrorType(input.parse()?))
+            }
+            _ => Err(Error::new_spanned(argname, "expected `uri` or `service` or `error`")),
         }
     }
 }
 
 #[proc_macro_attribute]
 pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let RpcArgs { name, uri, service } = parse_macro_input!(attr as RpcArgs);
+    let RpcArgs { name, uri, service, client_error } = parse_macro_input!(attr as RpcArgs);
     let RpcFunc { vis, sig, block } = parse_macro_input!(item as RpcFunc);
 
     let RpcFuncSignature {
@@ -242,8 +253,12 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let client_func_signature = {
-        let err_type = quote! {
-            #crate_path::ClientRpcError<#error_type, #client_err_type, #format_err_type>
+        let err_type = if let Some(t) = client_error {
+            quote!{ #t }
+        } else {
+            quote! {
+                #crate_path::ClientRpcError<#error_type, #client_err_type, #format_err_type>
+            }
         };
 
         let client_return_type = quote! {
@@ -259,9 +274,9 @@ pub fn rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
     let client_func = if cfg!(feature = "client") {
         quote! {
             #vis #client_func_signature {
-                #crate_path::internal::rpc_call::<#service, #name>(#name {
+                ::std::result::Result::Ok(#crate_path::internal::rpc_call::<#service, #name>(#name {
                     #(#common_args_names),*
-                }).await
+                }).await?)
             }
         }
     } else {
