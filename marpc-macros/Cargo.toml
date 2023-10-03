@@ -1,6 +1,6 @@
 [package]
 name = "marpc-macros"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Birk Tjelmeland <git@birktj.no>"]
 description = "Implementation of the #[rpc] macro for marpc"

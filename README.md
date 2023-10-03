@@ -14,7 +14,7 @@ transport protocol or serialization format.
 
 ```toml
 [dependencies]
-marpc = "0.1.0"
+marpc = "0.2.0"
 ```
 
 # Features

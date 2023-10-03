@@ -1,6 +1,6 @@
 [package]
 name = "marpc"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Birk Tjelmeland <git@birktj.no>"]
 description = "Macro based, boilerplate-free rpc library"
@@ -31,7 +31,7 @@ inventory = { version = "0.3", optional = true }
 thiserror = "1.0"
 serde = { version = "1.0", features = [ "derive" ] }
 serde_json = "1.0"
-marpc-macros = { version = "=0.1.0", path = "marpc-macros" }
+marpc-macros = { version = "=0.2.0", path = "marpc-macros" }
 
 [dev-dependencies]
 pollster = "0.3"
